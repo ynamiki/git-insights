@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Git Insights</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    </head>
+    <body>
+        <div class="container-fluid">
+            <h1>Git Insights</h1>
+            <ul>
+                <li>Repositories: {{ repositories|join(', ') }}</li>
+                <li>Total number of commits: {{ num_commits }}</li>
+            </ul>
+            <h2>Commits</h2>
+            <canvas id="commitsByMonthChart" width="12" height="2"></canvas>
+            <h2>Top {{ top_n }} Contributors</h2>
+            <div class="row">
+                <div class="col-md-7">
+                    <h3>By Author</h3>
+                    <p>{{ num_authors }} authors.</p>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Author</th>
+                                <th>Commits</th>
+                                <th>Percentage (Cumulative)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {# https://github.com/pallets/jinja/issues/641 #}
+                            {# https://stackoverflow.com/a/32700975 #}
+                            {% set sum = [0] %}
+                            {% for x in commits_by_author %}
+                                <tr>
+                                    <td>{{ x[0].name }} &lt;{{ x[0].email }}&gt;</td>
+                                    <td class="text-right">{{ x[1] }}</td>
+                                    {% if sum.append(sum.pop() + x[1]) %}{% endif %}
+                                    <td class="text-right">{{ '%5.2f'|format(x[1] / num_commits * 100) }} %
+                                        ({{ '%5.2f'|format(sum[0] / num_commits * 100) }} %)</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-5">
+                    <h3>By Domain</h3>
+                    <p>{{ num_domains }} domains.</p>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Domain</th>
+                                <th>Commits</th>
+                                <th>Percentage (Cumulative)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set sum = [0] %}
+                            {% for x in commits_by_domain %}
+                                <tr>
+                                    <td>{{ x[0] }}</td>
+                                    <td class="text-right">{{ x[1] }}</td>
+                                    {% if sum.append(sum.pop() + x[1]) %}{% endif %}
+                                    <td class="text-right">{{ '%5.2f'|format(x[1] / num_commits * 100) }} %
+                                        ({{ '%5.2f'|format(sum[0] / num_commits * 100) }} %)</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.bundle.min.js" integrity="sha256-VNbX9NjQNRW+Bk02G/RO6WiTKuhncWI4Ey7LkSbE+5s=" crossorigin="anonymous"></script>
+        <script>{% include 'script.js' %}</script>
+    </body>
+</html>
