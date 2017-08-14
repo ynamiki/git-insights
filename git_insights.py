@@ -3,6 +3,7 @@ import collections
 import datetime
 import json
 import operator
+import sys
 
 import git
 import jinja2
@@ -23,6 +24,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 num_commits = 0
+earliest_authored_date = sys.maxsize
 commits_by_author = collections.defaultdict(int)
 commits_by_domain = collections.defaultdict(int)
 commits_by_month = collections.defaultdict(int)
@@ -36,6 +38,7 @@ for r in args.repositories:
             continue
 
         num_commits += 1
+        earliest_authored_date = min(commit.authored_date, earliest_authored_date)
 
         author = commit.author
         commits_by_author[author] += 1
@@ -44,7 +47,7 @@ for r in args.repositories:
         if domain:
             commits_by_domain[domain] += 1
         
-        commits_by_month[utils.round_to_month(commit.authored_date)] += 1
+        commits_by_month[utils.round_to_month_str(commit.authored_date)] += 1
 
 sorted_commits_by_author = sorted(
     commits_by_author.items(),
@@ -52,9 +55,10 @@ sorted_commits_by_author = sorted(
 sorted_commits_by_domain = sorted(
     commits_by_domain.items(),
     key=operator.itemgetter(1), reverse=True)
-sorted_commits_by_month = sorted(
-    commits_by_month.items(),
-    key=operator.itemgetter(0))
+
+sorted_commits_by_month = []
+for d in utils.month_range_str(datetime.date.fromtimestamp(earliest_authored_date)):
+    sorted_commits_by_month.append((d, commits_by_month[d]))
 
 top_n = 10
 render_context = {
