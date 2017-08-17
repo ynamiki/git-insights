@@ -1,22 +1,34 @@
 window.onload = function() {
-    var ctx = document.getElementById('commitsByMonthChart');
-    var commitsByDomainChart = new Chart(ctx, {
+    var commitsByMonthChart = new Chart(document.getElementById('commitsByMonthChart'), {
         type: 'bar',
         data: {
-            labels: [
-                {% for x in commits_by_month -%}
-                    '{{ x[0] }}',
-                {% endfor %}
-            ],
+            labels: {{ date_labels|tojson() }},
+            datasets: [{
+                label: 'Number of commits',
+                data: {{ commits_by_month|tojson() }}
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        display: false
+                    }
+                }]
+            }
+        }
+    });
+    var linesByMonthChart = new Chart(document.getElementById('linesByMonthChart'), {
+        type: 'line',
+        data: {
+            labels: {{ date_labels|tojson() }},
             datasets: [
-                {
-                    label: 'Number of commits',
-                    data: [
-                        {% for x in commits_by_month -%}
-                            {{ x[1] }},
-                        {% endfor %}
-                    ]
-                }
+                {% for key, value in lines_by_month.items() %}
+                    {
+                        label: '{{ key }}',
+                        data: {{ value|tojson() }}
+                    },
+                {% endfor %}
             ]
         },
         options: {
@@ -24,6 +36,14 @@ window.onload = function() {
                 xAxes: [{
                     gridLines: {
                         display: false
+                    }
+                }],
+                yAxes: [{
+                    stacked: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return (value / 1000) + ' k';
+                        }
                     }
                 }]
             }

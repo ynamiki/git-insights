@@ -1,4 +1,6 @@
 import datetime
+import shlex
+import subprocess
 
 import dateutil.relativedelta
 
@@ -34,3 +36,11 @@ def get_domain(email):
             domain = '.'.join(split[-2:])
     
     return domain
+
+def count_lines(filename):
+    # FIXME Implement natively
+    command = ('find "{}" -path "*/.git" -prune -o -type f -print0 '
+        + '| xargs -0 wc -l').format(shlex.quote(filename))
+    proc = subprocess.run(
+        command, stdout=subprocess.PIPE, shell=True, encoding='utf-8')
+    return proc.stdout.rsplit('\n', 2)[-2].split()[0]
