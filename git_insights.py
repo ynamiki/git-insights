@@ -2,6 +2,7 @@ import argparse
 import collections
 import datetime
 import json
+import logging
 import operator
 import sys
 
@@ -9,6 +10,9 @@ import git
 import jinja2
 
 import utils
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -19,9 +23,18 @@ class CustomJSONEncoder(json.JSONEncoder):
 parser = argparse.ArgumentParser(
     description='Make reports from Git repositories.')
 parser.add_argument(
+    '--verbose', action='store_true',
+    help='Output more logs')
+parser.add_argument(
+    '--branch', metavar='branch', nargs='?', default='master',
+    help='Target branch')
+parser.add_argument(
     'repositories', metavar='repo', nargs='+',
     help='Git repositories')
 args = parser.parse_args()
+
+if args.verbose:
+    logging.getLogger().setLevel(logging.DEBUG)
 
 num_commits = 0
 earliest_authored_date = sys.maxsize
@@ -31,10 +44,13 @@ commits_by_month = collections.defaultdict(int)
 first_commit_in_month = collections.OrderedDict()
 
 for r in args.repositories:
+    logger.info('opening repository: %s', r)
     repo = git.Repo(r)
 
+    logger.info('checking out branch: %s', args.branch)
+    repo.git.checkout(args.branch)
+
     first_commit_in_month[r] = {}
-    repo.git.checkout('origin/HEAD')
     for commit in repo.iter_commits():
         # Skip a merge commit
         if len(commit.parents) > 1:
@@ -68,7 +84,6 @@ sorted_commits_by_month = []
 for d in date_labels:
     sorted_commits_by_month.append(commits_by_month[d])
 
-# Create lines by month
 lines_by_month = collections.OrderedDict()
 for r in first_commit_in_month.keys():
     repo = git.Repo(r)
@@ -76,8 +91,11 @@ for r in first_commit_in_month.keys():
     prev_lines = 0
     for d in date_labels:
         if d in first_commit_in_month[r]:
-            repo.git.checkout(first_commit_in_month[r][d])
+            rev = first_commit_in_month[r][d]
+            logger.info('counting %s/%s (%s)', r, rev[:7], d)
+            repo.git.checkout(rev)
             lines = utils.count_lines(r)
+            logger.info('%d lines', lines)
         else:
             lines = prev_lines
         lines_by_month[r].append(lines)

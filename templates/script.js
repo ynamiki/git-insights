@@ -32,6 +32,11 @@ window.onload = function() {
             ]
         },
         options: {
+            elements: {
+                line: {
+                    tension: 0
+                }
+            },
             scales: {
                 xAxes: [{
                     gridLines: {
